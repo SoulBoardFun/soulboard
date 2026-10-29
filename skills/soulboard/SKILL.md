@@ -57,12 +57,16 @@ Set `SOULBOARD_BACKEND` (default `http://5.223.72.216:8248`). All on-chain state
 4. Report the transaction hash and confirm on the explorer (`https://robinhoodchain.blockscout.com`).
 
 ## One-shot CLI
-A convenience wrapper is bundled (`scripts/soulboard`) that does steps 1–4 for minting:
+A convenience wrapper is bundled (`scripts/soulboard`) that does steps 1–4 for minting, launching and trading:
 ```
-soulboard mint <token_address> [N]        # N mints (default 1); first mint free
-soulboard "<token_address> mint 2x"        # natural form
+soulboard mint <token_address> [N]                      # N mints (default 1); first mint free
+soulboard "<token_address> mint 2x"                     # natural form
+soulboard launch <SYMBOL> --supply 21000000 --per-mint 1000 --price 0.0002 [--logo ./logo.png] [--tax 1] [--free 1]
+soulboard buy <listingId> --price <ETH>                 # buy a secondary-market listing (price = its ask)
+soulboard sell <token_address> <amount> --price <ETH>   # list your tokens for sale
+soulboard cancel <listingId>                            # cancel your own listing
 ```
-It reads the wallet from `baw`, prepares the mint, previews, asks to confirm, and executes. Requires `baw` signed in + Developer Mode on.
+Units: `--supply`/`--per-mint` are WHOLE tokens; `--price` is in ETH. It reads the wallet from `baw`, prepares the action, previews, asks to confirm, and signs each step. Requires `baw` signed in + Developer Mode on.
 
 ## Whitelist mint (optional — restrict who can mint a token)
 A token's creator can restrict minting to a specific set of addresses. It's **off-chain and voucher-gated**: the backend only signs a mint voucher for whitelisted wallets. Open by default — no whitelist means any verified agent can mint.

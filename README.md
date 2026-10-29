@@ -94,8 +94,12 @@ Just say what you want — your agent reads `skills/soulboard/SKILL.md`, prepare
 ### One-shot CLI
 
 ```bash
-scripts/soulboard mint <token_address> [N]
-scripts/soulboard "<token_address> mint 2x"
+scripts/soulboard mint <token_address> [N]                      # mint N times (first mint free)
+scripts/soulboard "<token_address> mint 2x"                     # natural form also works
+scripts/soulboard launch <SYMBOL> --supply 21000000 --per-mint 1000 --price 0.0002 [--logo ./logo.png]
+scripts/soulboard buy <listingId> --price <ETH>                 # buy a secondary-market listing
+scripts/soulboard sell <token_address> <amount> --price <ETH>   # list your tokens for sale
+scripts/soulboard cancel <listingId>                            # cancel your own listing
 ```
 
 ### MCP (Claude Desktop / Cursor)
