@@ -12,6 +12,9 @@ Usage:
   soulboard launch <SYMBOL> --name "..." --supply 21000000 --per-mint 1000 --price 0.0002 \
             [--tax 1] [--free 1] [--max-per-wallet 10] [--logo ./logo.png] [--desc "..."] \
             [--web URL] [--x URL] [--metadata-uri ipfs://...]
+  soulboard buy <listingId> --price <ETH>     # buy a secondary-market listing (price = its ask)
+  soulboard sell <token_address> <amount> --price <ETH>   # list your tokens for sale
+  soulboard cancel <listingId>                # cancel your own listing
   soulboard --help
 
 Launch units (IMPORTANT): --supply and --per-mint are WHOLE TOKENS (e.g. 21000000, 1000) — never
@@ -190,6 +193,53 @@ def do_launch(backend, chain, wallet, symbol, args):
     return True
 
 
+def do_buy(backend, chain, wallet, listing_id, price_eth, auto_yes):
+    # price_eth is what you pay for the listing (in ETH); any overpay is refunded on-chain
+    value_wei = int(round(float(price_eth) * 10**18)) if price_eth else 0
+    d = post(backend + "/prepare/buy",
+             {"wallet": wallet, "listingId": listing_id, "value_wei": str(value_wei)})
+    if not d.get("ok") or d.get("error"):
+        print(f"  refused: {d.get('error') or d}")
+        return False
+    st = d["sign_this"]
+    print(f"  buying listing #{listing_id} for {price_eth or 0} ETH")
+    return _sign_step(chain, wallet, st["to"], st["data"], st.get("value", "0"), auto_yes,
+                      f"buy #{listing_id}")
+
+
+def do_sell(backend, chain, wallet, asset, amount_tokens, price_eth, auto_yes):
+    # amount_tokens = WHOLE tokens to list; price_eth = sale price per listing in ETH
+    try:
+        amount_wei = int(float(amount_tokens)) * 10**18
+        price_wei = int(round(float(price_eth) * 10**18))
+    except Exception:
+        print("  sell needs: soulboard sell <token_address> <amount> --price <ETH>")
+        return False
+    d = post(backend + "/prepare/sell",
+             {"wallet": wallet, "asset": asset, "amount": str(amount_wei), "priceWei": str(price_wei)})
+    if not d.get("ok") or d.get("error"):
+        print(f"  refused: {d.get('error') or d}")
+        return False
+    print(f"  listing {amount_tokens} of {asset} at {price_eth} ETH")
+    for st in d.get("steps", []):
+        label = st.get("label") or st.get("step")
+        if not _sign_step(chain, wallet, st["to"], st["data"], st.get("value", "0"), auto_yes, label):
+            print("  listing aborted (nothing after the failed step was sent).")
+            return False
+    print("  ✅ listed for sale.")
+    return True
+
+
+def do_cancel(backend, chain, wallet, listing_id, auto_yes):
+    d = post(backend + "/prepare/cancel", {"listingId": listing_id})
+    if not d.get("ok") or d.get("error"):
+        print(f"  refused: {d.get('error') or d}")
+        return False
+    st = d["sign_this"]
+    return _sign_step(chain, wallet, st["to"], st["data"], st.get("value", "0"), auto_yes,
+                      f"cancel #{listing_id}")
+
+
 def parse_natural(tokens):
     """Accept: mint <ca> [N]  OR  '<ca> mint Nx'."""
     joined = " ".join(tokens)
@@ -247,6 +297,32 @@ def main(argv):
             return 1
         print(f"SoulBoard · wallet {wallet} · chain {args.chain} · backend {args.backend}")
         return 0 if do_launch(args.backend, args.chain, wallet, symbol, args) else 1
+
+    # ---- buy / sell / cancel (secondary market) ----
+    if cmd in ("buy", "sell", "cancel"):
+        wallet = args.wallet or baw_address()
+        if not wallet:
+            print("Could not read your agentic wallet. Run `baw auth signin` first (and `baw auth verify`).")
+            return 1
+        if not dev_mode_on():
+            print("⚠️  Developer Mode is off in your Binance app. Enable it (Settings → Developer Mode), then retry.")
+            return 1
+        print(f"SoulBoard · wallet {wallet} · chain {args.chain} · backend {args.backend}")
+        if cmd == "buy":
+            if len(rest) < 2 or not rest[1].isdigit():
+                print("usage: soulboard buy <listingId> --price <ETH>   (price = the listing's asking price)")
+                return 1
+            return 0 if do_buy(args.backend, args.chain, wallet, int(rest[1]), args.price, args.yes) else 1
+        if cmd == "sell":
+            if len(rest) < 3 or not re.match(r"^0x[0-9a-fA-F]{40}$", rest[1]):
+                print("usage: soulboard sell <token_address> <amount> --price <ETH>")
+                return 1
+            return 0 if do_sell(args.backend, args.chain, wallet, rest[1], rest[2], args.price, args.yes) else 1
+        # cancel
+        if len(rest) < 2 or not rest[1].isdigit():
+            print("usage: soulboard cancel <listingId>")
+            return 1
+        return 0 if do_cancel(args.backend, args.chain, wallet, int(rest[1]), args.yes) else 1
 
     # ---- mint ----
     if cmd == "mint":
