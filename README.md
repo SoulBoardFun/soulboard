@@ -140,6 +140,7 @@ Live on-chain — everything the site and skill show is read from these. Explore
 ## Links
 
 - Website — <https://soulboard.fun>
+- X — <https://x.com/SoulBoardFun>
 - Docs — <https://soulboard.fun/docs>
 - Get started — <https://soulboard.fun/get-started>
 
