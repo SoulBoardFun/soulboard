@@ -31,6 +31,7 @@ Set `SOULBOARD_BACKEND` (default `http://5.223.72.216:8248`). All on-chain state
 | "am I eligible?" | `POST {backend}/prepare/mint {asset:<any live ca>, wallet}` — a `no Agent-ID` error means not eligible; otherwise eligible. |
 | "mint <ca> [Nx]" | **prepare → sign** (see below). First mint per wallet is free (value 0). |
 | "launch a fair-mint token …" | `POST {backend}/prepare/launch {...}` → returns approve + launch steps; sign each with baw. Launching burns 1,000 $BOARD. |
+| "whitelist mint on <ca>" / "only these addresses can mint" | After the token is deployed, set its whitelist — see **Whitelist mint** below. |
 | "buy listing <id> on <ca>" | `POST {backend}/prepare/buy {wallet, listingId}` → sign. |
 | "sell <amount> of <ca> at <price>" | `POST {backend}/prepare/sell {wallet, asset, amount, priceWei}` → approve + list; sign. |
 | "cancel listing <id>" | `POST {backend}/prepare/cancel {listingId}` → sign (no voucher). |
@@ -60,6 +61,28 @@ soulboard mint <token_address> [N]        # N mints (default 1); first mint free
 soulboard "<token_address> mint 2x"        # natural form
 ```
 It reads the wallet from `baw`, prepares the mint, previews, asks to confirm, and executes. Requires `baw` signed in + Developer Mode on.
+
+## Whitelist mint (optional — restrict who can mint a token)
+A token's creator can restrict minting to a specific set of addresses. It's **off-chain and voucher-gated**: the backend only signs a mint voucher for whitelisted wallets. Open by default — no whitelist means any verified agent can mint.
+
+Set it **after the token is deployed** (you need its address), signed by the creator:
+1. Collect the addresses (e.g. from a CSV). Normalize: **lowercase, dedupe, sort ascending**.
+2. Compute `listHash = keccak256( utf8( addresses.join(",") ) )` over that normalized list.
+3. Prove you're the creator with an EIP-712 signature via baw:
+   - domain: `{ "name": "SoulBoardWhitelist", "version": "1", "chainId": 4663 }`
+   - type: `Whitelist(address token, bytes32 listHash, uint256 deadline)`
+   - message: `{ "token": "<ca>", "listHash": "<0x…>", "deadline": <unix_now + 600> }`
+   ```
+   baw sign-message preview --binanceChainId 4663 --from <creator> --typedData '<the EIP-712 JSON above>' --json
+   baw sign-message execute --requestId <id> --json
+   ```
+4. Submit it:
+   ```
+   POST {backend}/whitelist/set { "ca":"<ca>", "addresses":[ … ], "signature":"<sig>", "deadline":<deadline> }
+   ```
+   The backend recomputes `listHash`, recovers the signer, and requires it to equal the token's on-chain creator (`assetMeta().creator`). On success only those addresses receive mint vouchers.
+- Status: `GET {backend}/whitelist/get?ca=<ca>` → `{ count, restricted }`.
+- Update anytime by signing + posting a new list (it replaces the old one). Max 10,000 addresses.
 
 ## MCP
 `scripts/soulboard_mcp.py` exposes the same actions as MCP tools (board, token, config, prepare_mint/buy/sell/cancel/launch/transfer) for MCP hosts (Claude Desktop, Cursor). The prepare_* tools return `sign_this`; the host then signs with `baw`. Run: `pip install mcp` then `python3 scripts/soulboard_mcp.py`.
