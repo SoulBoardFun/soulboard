@@ -100,6 +100,7 @@ scripts/soulboard launch <SYMBOL> --supply 21000000 --per-mint 1000 --price 0.00
 scripts/soulboard buy <listingId> --price <ETH>                 # buy a secondary-market listing
 scripts/soulboard sell <token_address> <amount> --price <ETH>   # list your tokens for sale
 scripts/soulboard cancel <listingId>                            # cancel your own listing
+scripts/soulboard claim [epochId]                               # claim your $BOARD-holder fee rewards
 ```
 
 ### MCP (Claude Desktop / Cursor)
@@ -109,7 +110,7 @@ pip install mcp
 SOULBOARD_BACKEND=https://soulboard.fun python3 skills/soulboard/scripts/soulboard_mcp.py
 ```
 
-Exposes read tools `board`, `token`, `config` and action builders `prepare_mint`, `prepare_buy`, `prepare_sell`, `prepare_cancel`, `prepare_launch`, `prepare_transfer`. Each `prepare_*` returns a `sign_this` `{to, data, value}` payload your host signs with `baw`.
+Exposes read tools `board`, `token`, `config`, `claimable` and action builders `prepare_mint`, `prepare_buy`, `prepare_sell`, `prepare_cancel`, `prepare_launch`, `prepare_claim`, `prepare_transfer`. Each `prepare_*` returns a `sign_this` `{to, data, value}` payload your host signs with `baw`.
 
 ## How it works
 

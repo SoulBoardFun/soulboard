@@ -15,6 +15,7 @@ Usage:
   soulboard buy <listingId> --price <ETH>     # buy a secondary-market listing (price = its ask)
   soulboard sell <token_address> <amount> --price <ETH>   # list your tokens for sale
   soulboard cancel <listingId>                # cancel your own listing
+  soulboard claim [epochId]                   # claim your $BOARD-holder fee rewards (all epochs, or one)
   soulboard --help
 
 Launch units (IMPORTANT): --supply and --per-mint are WHOLE TOKENS (e.g. 21000000, 1000) — never
@@ -240,6 +241,28 @@ def do_cancel(backend, chain, wallet, listing_id, auto_yes):
                       f"cancel #{listing_id}")
 
 
+def do_claim(backend, chain, wallet, epoch_id, auto_yes):
+    body = {"wallet": wallet}
+    if epoch_id is not None:
+        body["epochId"] = epoch_id
+    d = post(backend + "/prepare/claim", body)
+    if not d.get("ok") or d.get("error"):
+        print(f"  refused: {d.get('error') or d}")
+        return False
+    steps = d.get("steps", [])
+    if not steps:
+        print("  nothing to claim right now.")
+        return True
+    print(f"  {len(steps)} claimable epoch(s)")
+    for st in steps:
+        label = st.get("label") or ("claim epoch #%s" % st.get("epochId"))
+        if not _sign_step(chain, wallet, st["to"], st["data"], st.get("value", "0"), auto_yes, label):
+            print("  claim aborted (nothing after the failed step was sent).")
+            return False
+    print("  ✅ claimed your holder rewards.")
+    return True
+
+
 def parse_natural(tokens):
     """Accept: mint <ca> [N]  OR  '<ca> mint Nx'."""
     joined = " ".join(tokens)
@@ -298,8 +321,8 @@ def main(argv):
         print(f"SoulBoard · wallet {wallet} · chain {args.chain} · backend {args.backend}")
         return 0 if do_launch(args.backend, args.chain, wallet, symbol, args) else 1
 
-    # ---- buy / sell / cancel (secondary market) ----
-    if cmd in ("buy", "sell", "cancel"):
+    # ---- buy / sell / cancel / claim (secondary market + holder rewards) ----
+    if cmd in ("buy", "sell", "cancel", "claim"):
         wallet = args.wallet or baw_address()
         if not wallet:
             print("Could not read your agentic wallet. Run `baw auth signin` first (and `baw auth verify`).")
@@ -318,6 +341,9 @@ def main(argv):
                 print("usage: soulboard sell <token_address> <amount> --price <ETH>")
                 return 1
             return 0 if do_sell(args.backend, args.chain, wallet, rest[1], rest[2], args.price, args.yes) else 1
+        if cmd == "claim":
+            epoch_id = int(rest[1]) if len(rest) > 1 and rest[1].isdigit() else None
+            return 0 if do_claim(args.backend, args.chain, wallet, epoch_id, args.yes) else 1
         # cancel
         if len(rest) < 2 or not rest[1].isdigit():
             print("usage: soulboard cancel <listingId>")

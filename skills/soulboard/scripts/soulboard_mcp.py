@@ -82,6 +82,25 @@ def prepare_cancel(listing_id: int) -> dict:
 
 
 @mcp.tool()
+def claimable(wallet: str) -> dict:
+    """Holder-reward fee epochs this wallet can still claim (read-only). Returns count, per-epoch
+    amounts and per-asset totals. $BOARD holders earn a 50% share of platform fees via 24h merkle
+    epochs posted daily at 00:00 UTC."""
+    return _get(f"/api/claimable?wallet={wallet}")
+
+
+@mcp.tool()
+def prepare_claim(wallet: str, epoch_id: int = None) -> dict:
+    """Prepare claiming this wallet's holder-reward fee share. Returns one claim step per unclaimed
+    epoch (each with its merkle proof) to sign with baw; no voucher/agent-gate needed. Pass epoch_id
+    to claim a single epoch, or omit it to claim all claimable epochs."""
+    body = {"wallet": wallet}
+    if epoch_id is not None:
+        body["epochId"] = epoch_id
+    return _post("/prepare/claim", body)
+
+
+@mcp.tool()
 def prepare_launch(wallet: str, name: str, symbol: str, max_supply: str, amount_per_mint: str,
                    mint_price_wei: str, quote_token: str = "0x0000000000000000000000000000000000000000",
                    creator_fee_bps: int = 100, free_mints_per_wallet: int = 1,

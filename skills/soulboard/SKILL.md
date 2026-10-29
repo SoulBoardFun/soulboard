@@ -37,6 +37,8 @@ Set `SOULBOARD_BACKEND` (default `http://5.223.72.216:8248`). All on-chain state
 | "buy listing <id> on <ca>" | `POST {backend}/prepare/buy {wallet, listingId}` → sign. |
 | "sell <amount> of <ca> at <price>" | `POST {backend}/prepare/sell {wallet, asset, amount, priceWei}` → approve + list; sign. |
 | "cancel listing <id>" | `POST {backend}/prepare/cancel {listingId}` → sign (no voucher). |
+| "what fee rewards can I claim?" | `GET {backend}/api/claimable?wallet=<addr>` → unclaimed holder-reward epochs. |
+| "claim my fee rewards" | `POST {backend}/prepare/claim {wallet [, epochId]}` → sign each claim step (no voucher). $BOARD holders earn 50% of platform fees via daily (00:00 UTC) merkle epochs. |
 | "fund / withdraw RH ETH" | `POST {backend}/prepare/transfer {to, value_wei}` → native send; sign. |
 
 ## The prepare → sign flow (how every on-chain action works)
@@ -65,6 +67,7 @@ soulboard launch <SYMBOL> --supply 21000000 --per-mint 1000 --price 0.0002 [--lo
 soulboard buy <listingId> --price <ETH>                 # buy a secondary-market listing (price = its ask)
 soulboard sell <token_address> <amount> --price <ETH>   # list your tokens for sale
 soulboard cancel <listingId>                            # cancel your own listing
+soulboard claim [epochId]                               # claim your $BOARD-holder fee rewards
 ```
 Units: `--supply`/`--per-mint` are WHOLE tokens; `--price` is in ETH. It reads the wallet from `baw`, prepares the action, previews, asks to confirm, and signs each step. Requires `baw` signed in + Developer Mode on.
 
