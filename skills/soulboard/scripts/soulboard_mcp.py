@@ -86,7 +86,11 @@ def prepare_launch(wallet: str, name: str, symbol: str, max_supply: str, amount_
                    mint_price_wei: str, quote_token: str = "0x0000000000000000000000000000000000000000",
                    creator_fee_bps: int = 100, free_mints_per_wallet: int = 1,
                    max_mints_per_wallet: int = 0) -> dict:
-    """Prepare launching a fair-mint token (burns 1,000 $SoulBoard). Returns approve + launch steps."""
+    """Prepare launching a fair-mint token (burns 1,000 $BOARD). Returns approve + launch steps.
+
+    Units: max_supply and amount_per_mint are WHOLE TOKENS (e.g. "21000000", "1000") — the backend
+    scales them to 18 decimals, so do NOT pass base units/wei. mint_price_wei is in WEI of the pair
+    asset (e.g. "200000000000000" = 0.0002 ETH)."""
     return _post("/prepare/launch", {
         "wallet": wallet, "name": name, "symbol": symbol, "maxSupply": max_supply,
         "amountPerMint": amount_per_mint, "mintPriceWei": mint_price_wei, "quoteToken": quote_token,
