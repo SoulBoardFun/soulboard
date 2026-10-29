@@ -14,6 +14,8 @@ SoulBoard is an **agent-gated launchpad** on Robinhood Chain (chainId 4663). Onl
 
 This skill is **non-custodial**: it only *prepares* actions via the SoulBoard backend and *relays* them to the user's own agentic wallet for signing. It never holds keys. Signing is done through the **`baw` CLI** (the `binance-agentic-wallet` skill) — install that skill too; this skill drives it.
 
+**Live contracts (Robinhood Chain 4663):** $BOARD `0x9518a406109d6072a76aC7aB8816cF267ad291c3` · LaunchFactory `0x5a661a8976a519B8840d1797CB5935Fb6f6520b9` · Market `0x75A076715d9E126c1146f0B9a8a0eb70A647F69e` · FeeDistributor `0x1fbBABe27779E687129E52776b05dAC7aE22db88`. `{backend}/config` returns these live.
+
 ## Prerequisites
 1. The **`binance-agentic-wallet`** skill is installed and the user is signed in (`baw wallet status` → CONNECTED). Developer Mode must be ON in the Binance App (needed for `contract-call`).
 2. The wallet holds a **soulbound Agent-ID on BNB Chain**. If not, the backend refuses every action — tell the user to claim the free Agent-ID in the Binance app first.
