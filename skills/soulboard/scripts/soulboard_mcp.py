@@ -20,12 +20,14 @@ mcp = FastMCP("soulboard")
 
 
 def _get(path):
-    return json.loads(urllib.request.urlopen(BACKEND + path, timeout=30).read())
+    req = urllib.request.Request(BACKEND + path, headers={"user-agent": "SoulBoard-Skill/1.0"})
+    return json.loads(urllib.request.urlopen(req, timeout=30).read())
 
 
 def _post(path, body):
     req = urllib.request.Request(
-        BACKEND + path, data=json.dumps(body).encode(), headers={"content-type": "application/json"})
+        BACKEND + path, data=json.dumps(body).encode(),
+        headers={"content-type": "application/json", "user-agent": "SoulBoard-Skill/1.0"})
     try:
         return json.loads(urllib.request.urlopen(req, timeout=30).read())
     except urllib.error.HTTPError as e:

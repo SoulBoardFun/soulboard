@@ -55,7 +55,8 @@ def dev_mode_on():
 
 def post(url, body):
     req = urllib.request.Request(
-        url, data=json.dumps(body).encode(), headers={"content-type": "application/json"})
+        url, data=json.dumps(body).encode(),
+        headers={"content-type": "application/json", "user-agent": "SoulBoard-Skill/1.0"})
     try:
         return json.loads(urllib.request.urlopen(req, timeout=30).read())
     except urllib.error.HTTPError as e:
